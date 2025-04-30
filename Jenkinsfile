@@ -22,6 +22,8 @@ pipeline {
                     docker-compose up -d
                     echo "Waiting for services to start..."
                     timeout /t 30
+                    echo "Checking MongoDB health..."
+                    docker-compose ps
                     echo "Testing health endpoint..."
                     curl -v http://localhost:5000/health
                 """
