@@ -22,7 +22,18 @@ pipeline {
                     echo "Starting services..."
                     docker-compose up -d
                     echo "Waiting for services to start..."
-                    timeout /t 30
+                    for /l %%x in (1,1,30) do (
+                        echo Waiting... %%x
+                        docker-compose ps | findstr "healthy" > nul
+                        if not errorlevel 1 (
+                            echo "Services are healthy"
+                            goto :continue
+                        )
+                        timeout /t 1 > nul
+                    )
+                    echo "Services failed to start within timeout"
+                    exit /b 1
+                    :continue
                     echo "Checking MongoDB health..."
                     docker-compose ps
                     echo "Checking backend logs..."
