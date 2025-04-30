@@ -16,9 +16,8 @@ pipeline {
                     echo "Checking Dockerfile location:"
                     dir market-risk-website\\backend
                     echo "Building Docker image..."
-                    cd market-risk-website\\backend
                     docker-compose down
-                    docker-compose build --no-cache --progress=plain
+                    docker-compose build --no-cache
                     echo "Starting services..."
                     docker-compose up -d
                     echo "Waiting for services to start..."
@@ -48,7 +47,6 @@ pipeline {
         always {
             bat """
                 echo "Cleaning up..."
-                cd market-risk-website\\backend
                 docker-compose down
                 docker system prune -f
             """
