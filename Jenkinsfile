@@ -13,8 +13,10 @@ pipeline {
                 bat """
                     echo "Current directory:"
                     dir
+                    echo "Changing to backend directory..."
+                    cd market-risk-website\\backend
                     echo "Checking Dockerfile location:"
-                    dir market-risk-website\\backend
+                    dir
                     echo "Stopping any existing containers..."
                     docker-compose down
                     echo "Building Docker image..."
@@ -75,6 +77,7 @@ pipeline {
         always {
             bat """
                 echo "Cleaning up..."
+                cd market-risk-website\\backend
                 docker-compose down
                 docker system prune -f
             """
