@@ -11,11 +11,19 @@ pipeline {
         stage('Build and Test') {
             steps {
                 bat """
+                    echo "Current directory:"
+                    dir
+                    echo "Checking Dockerfile location:"
+                    dir market-risk-website\\backend
+                    echo "Building Docker image..."
                     docker-compose down
-                    docker-compose build --no-cache
+                    docker-compose build --no-cache --progress=plain
+                    echo "Starting services..."
                     docker-compose up -d
+                    echo "Waiting for services to start..."
                     timeout /t 10
-                    curl http://localhost:5000/health
+                    echo "Testing health endpoint..."
+                    curl -v http://localhost:5000/health
                 """
             }
         }
@@ -38,6 +46,7 @@ pipeline {
     post {
         always {
             bat """
+                echo "Cleaning up..."
                 docker-compose down
                 docker system prune -f
             """
