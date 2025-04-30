@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./market-risk-website/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+    depends_on:
+      - mongodb
+    volumes:
+      - ./market-risk-website/backend:/app
+    command: >
+      sh -c "pip install flake8 pytest &&
+             flake8 . &&
+             python -m pytest tests/ &&
+             python app.py"
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data: 

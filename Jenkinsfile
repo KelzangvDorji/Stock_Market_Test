@@ -1,11 +1,6 @@
 pipeline {
     agent any
     
-    environment {
-        PYTHON_VERSION = '3.9'
-        VENV_PATH = 'venv'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -13,43 +8,13 @@ pipeline {
             }
         }
         
-        stage('Setup Python Environment') {
+        stage('Build and Test') {
             steps {
                 bat """
-                    python -m venv %VENV_PATH%
-                    call %VENV_PATH%\\Scripts\\activate
-                    pip install -r market-risk-website\\backend\\requirements.txt
-                """
-            }
-        }
-        
-        stage('Lint') {
-            steps {
-                bat """
-                    call %VENV_PATH%\\Scripts\\activate
-                    pip install flake8
-                    flake8 market-risk-website\\backend\\
-                """
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                bat """
-                    call %VENV_PATH%\\Scripts\\activate
-                    cd market-risk-website\\backend
-                    python -m pytest tests\\
-                """
-            }
-        }
-        
-        stage('Build') {
-            steps {
-                bat """
-                    call %VENV_PATH%\\Scripts\\activate
-                    cd market-risk-website\\backend
-                    start /B python app.py
-                    timeout /t 5
+                    docker-compose down
+                    docker-compose build
+                    docker-compose up -d
+                    timeout /t 10
                     curl http://localhost:5000/health
                 """
             }
@@ -63,7 +28,8 @@ pipeline {
                 bat """
                     echo "Deploying to production..."
                     rem Add your deployment steps here
-                    rem For example: deploying to a cloud platform or updating a server
+                    rem For example: pushing to a container registry
+                    rem docker-compose push
                 """
             }
         }
@@ -72,7 +38,8 @@ pipeline {
     post {
         always {
             bat """
-                taskkill /F /IM python.exe /FI "WINDOWTITLE eq app.py" || exit 0
+                docker-compose down
+                docker system prune -f
             """
             cleanWs()
         }
