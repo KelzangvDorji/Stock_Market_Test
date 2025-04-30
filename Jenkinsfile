@@ -16,12 +16,13 @@ pipeline {
                     echo "Checking Dockerfile location:"
                     dir market-risk-website\\backend
                     echo "Building Docker image..."
+                    cd market-risk-website\\backend
                     docker-compose down
                     docker-compose build --no-cache --progress=plain
                     echo "Starting services..."
                     docker-compose up -d
                     echo "Waiting for services to start..."
-                    timeout /t 10
+                    timeout /t 30
                     echo "Testing health endpoint..."
                     curl -v http://localhost:5000/health
                 """
@@ -47,6 +48,7 @@ pipeline {
         always {
             bat """
                 echo "Cleaning up..."
+                cd market-risk-website\\backend
                 docker-compose down
                 docker system prune -f
             """
