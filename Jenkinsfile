@@ -15,8 +15,10 @@ pipeline {
                     dir
                     echo "Changing to backend directory..."
                     cd market-risk-website\\backend
-                    echo "Checking Dockerfile location:"
+                    echo "Current directory after change:"
                     dir
+                    echo "Checking Dockerfile contents:"
+                    type Dockerfile
                     echo "Stopping any existing containers..."
                     docker-compose down
                     echo "Building Docker image..."

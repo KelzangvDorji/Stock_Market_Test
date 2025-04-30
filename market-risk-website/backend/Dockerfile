@@ -5,13 +5,13 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
-COPY market-risk-website/backend/requirements.txt .
+COPY requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
-COPY market-risk-website/backend/ .
+COPY . .
 
 # Expose the port the app runs on
 EXPOSE 5000
