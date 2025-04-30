@@ -2,44 +2,49 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: .
-      dockerfile: market-risk-website/backend/Dockerfile
+    build: ./backend
     ports:
-      - "5000:5000"
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv  # Exclude virtualenv from host
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/market_risk
-      - FLASK_APP=app.py
-      - FLASK_ENV=development
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    volumes:
-      - ./market-risk-website/backend:/app
-    command: >
-      sh -c "pip install flake8 pytest &&
-             flake8 . &&
-             python -m pytest tests/ &&
-             flask run --host=0.0.0.0"
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
+    restart: unless-stopped
+    networks:
+      - app-network
 
-  mongodb:
-    image: mongo:latest
+  frontend:
+    build: ./frontend
     ports:
-      - "27019:27017"
-    volumes:
-      - mongodb_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
 
-volumes:
-  mongodb_data: 
+  frontend-dev:
+    build:
+      context: ./frontend
+      target: builder
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:8000  # For dev outside Docker
+      - CHOKIDAR_USEPOLLING=true  # Better file watching in Docker
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,92 +1,69 @@
 pipeline {
     agent any
-    
+
+    environment {
+        COMPOSE_PROJECT_DIR = "market-risk-website/backend"
+    }
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        
-        stage('Build and Test') {
+
+        stage('Build and Run with Docker Compose') {
             steps {
-                bat """
-                    echo "Current directory:"
-                    dir
-                    echo "Changing to backend directory..."
-                    cd market-risk-website\\backend
-                    echo "Current directory after change:"
-                    dir
-                    echo "Checking Dockerfile contents:"
-                    type Dockerfile
-                    echo "Stopping any existing containers..."
-                    docker-compose down
-                    echo "Building Docker image..."
-                    docker-compose build --no-cache
-                    if errorlevel 1 (
-                        echo "Docker build failed!"
-                        exit /b 1
-                    )
-                    echo "Starting services..."
-                    docker-compose up -d
-                    if errorlevel 1 (
-                        echo "Failed to start services!"
-                        exit /b 1
-                    )
-                    echo "Waiting for services to start..."
-                    for /l %%x in (1,1,30) do (
-                        echo Waiting... %%x
-                        docker-compose ps | findstr "healthy" > nul
-                        if not errorlevel 1 (
-                            echo "Services are healthy"
-                            goto :continue
+                dir("${COMPOSE_PROJECT_DIR}") {
+                    bat """
+                        echo "Bringing down any existing containers..."
+                        docker-compose down
+
+                        echo "Building and starting containers..."
+                        docker-compose up --build -d
+                        
+                        echo "Waiting for containers to stabilize..."
+                        timeout /t 10 > nul
+                        
+                        echo "Checking backend health endpoint..."
+                        curl -v http://localhost:5000/health
+                        if errorlevel 1 (
+                            echo "Health check failed!"
+                            exit /b 1
                         )
-                        timeout /t 1 > nul
-                    )
-                    echo "Services failed to start within timeout"
-                    exit /b 1
-                    :continue
-                    echo "Checking MongoDB health..."
-                    docker-compose ps
-                    echo "Checking backend logs..."
-                    docker-compose logs backend
-                    echo "Testing health endpoint..."
-                    curl -v http://localhost:5000/health
-                    if errorlevel 1 (
-                        echo "Health check failed!"
-                        exit /b 1
-                    )
-                """
+                    """
+                }
             }
         }
-        
-        stage('Deploy') {
+
+        stage('Deploy to Production') {
             when {
                 branch 'main'
             }
             steps {
                 bat """
                     echo "Deploying to production..."
-                    rem Add your deployment steps here
-                    rem For example: pushing to a container registry
-                    rem docker-compose push
+                    rem Add production deployment steps here
+                    rem Example: docker-compose push, etc.
                 """
             }
         }
     }
-    
+
     post {
         always {
-            bat """
-                echo "Cleaning up..."
-                cd market-risk-website\\backend
-                docker-compose down
-                docker system prune -f
-            """
+            dir("${COMPOSE_PROJECT_DIR}") {
+                bat """
+                    echo "Stopping containers and pruning Docker..."
+                    docker-compose down
+                    docker system prune -f
+                """
+            }
             cleanWs()
         }
+
         failure {
-            echo "Pipeline failed! Check the logs for details."
+            echo "Pipeline failed. Check logs and health checks."
         }
     }
-} 
+}
