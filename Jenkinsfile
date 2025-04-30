@@ -15,8 +15,9 @@ pipeline {
                     dir
                     echo "Checking Dockerfile location:"
                     dir market-risk-website\\backend
-                    echo "Building Docker image..."
+                    echo "Stopping any existing containers..."
                     docker-compose down
+                    echo "Building Docker image..."
                     docker-compose build --no-cache
                     echo "Starting services..."
                     docker-compose up -d
