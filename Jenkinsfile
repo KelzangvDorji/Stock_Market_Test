@@ -25,6 +25,8 @@ pipeline {
                     timeout /t 30
                     echo "Checking MongoDB health..."
                     docker-compose ps
+                    echo "Checking backend logs..."
+                    docker-compose logs backend
                     echo "Testing health endpoint..."
                     curl -v http://localhost:5000/health
                 """
