@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 import os
 from dotenv import load_dotenv
+import numpy as np
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +13,37 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 client = MongoClient(MONGO_URI)
 db = client["risk_db"]
 collection = db["application_data"]
+
+class RiskModel:
+    """Market risk prediction model."""
+    
+    def __init__(self):
+        """Initialize the model."""
+        self.model = LinearRegression()
+        self.is_trained = False
+    
+    def train(self, data):
+        """Train the model with historical data."""
+        try:
+            df = pd.DataFrame(data)
+            X = df[['market_volatility', 'trading_volume', 'price_momentum']]
+            y = df['risk_score']
+            self.model.fit(X, y)
+            self.is_trained = True
+        except Exception as e:
+            raise Exception(f"Training failed: {str(e)}")
+    
+    def predict(self, data):
+        """Predict market risk for new data."""
+        if not self.is_trained:
+            raise Exception("Model not trained yet")
+        try:
+            df = pd.DataFrame([data])
+            X = df[['market_volatility', 'trading_volume', 'price_momentum']]
+            prediction = self.model.predict(X)
+            return float(prediction[0])
+        except Exception as e:
+            raise Exception(f"Prediction failed: {str(e)}")
 
 def train_regression_model():
     data = list(collection.find({}, {"_id": 0}))  # Fetch data, exclude MongoDB ID

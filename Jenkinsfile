@@ -19,8 +19,16 @@ pipeline {
                     docker-compose down
                     echo "Building Docker image..."
                     docker-compose build --no-cache
+                    if errorlevel 1 (
+                        echo "Docker build failed!"
+                        exit /b 1
+                    )
                     echo "Starting services..."
                     docker-compose up -d
+                    if errorlevel 1 (
+                        echo "Failed to start services!"
+                        exit /b 1
+                    )
                     echo "Waiting for services to start..."
                     for /l %%x in (1,1,30) do (
                         echo Waiting... %%x
@@ -40,6 +48,10 @@ pipeline {
                     docker-compose logs backend
                     echo "Testing health endpoint..."
                     curl -v http://localhost:5000/health
+                    if errorlevel 1 (
+                        echo "Health check failed!"
+                        exit /b 1
+                    )
                 """
             }
         }
@@ -67,6 +79,9 @@ pipeline {
                 docker system prune -f
             """
             cleanWs()
+        }
+        failure {
+            echo "Pipeline failed! Check the logs for details."
         }
     }
 } 

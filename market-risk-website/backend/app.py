@@ -1,19 +1,26 @@
 from flask import Flask, request, jsonify
+from pymongo import MongoClient
 from database import Database
 from model import RiskModel
 import os
 from dotenv import load_dotenv
+import pandas as pd
+from sklearn.linear_model import LinearRegression
 
 # Load environment variables
 load_dotenv()
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongodb:27017/market_risk")
 
 # Initialize Flask app
 app = Flask(__name__)
 
 # Connect to MongoDB
 client = MongoClient(MONGO_URI)
-db = Database()
+db = client.market_risk
+collection = db.risk_data
+
+# Initialize database and model
+database = Database(client)
 model = RiskModel()
 
 def train_regression_model():
@@ -68,7 +75,12 @@ def predict_risk():
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
-    return jsonify({"status": "healthy"}), 200
+    try:
+        # Test MongoDB connection
+        client.admin.command('ping')
+        return jsonify({"status": "healthy", "mongodb": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
 @app.route("/train", methods=["POST"])
 def train():
@@ -84,7 +96,7 @@ def train():
 def get_data():
     """Get historical data endpoint."""
     try:
-        data = db.get_historical_data()
+        data = database.get_historical_data()
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
