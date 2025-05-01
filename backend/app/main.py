@@ -31,6 +31,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
 # MongoDB setup with retry logic
 def connect_to_mongodb(max_retries=3, retry_delay=2):
     for attempt in range(max_retries):
