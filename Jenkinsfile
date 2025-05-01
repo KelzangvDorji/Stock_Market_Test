@@ -47,19 +47,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
-            steps {
-                bat """
-                    echo "Deploying to production..."
-                    git tag -a "v${BUILD_NUMBER}" -m "Production release ${BUILD_NUMBER}"
-                    git push origin "v${BUILD_NUMBER}"
-                """
-            }
-        }
     }
 
     post {
