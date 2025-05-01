@@ -30,19 +30,25 @@ pipeline {
                         docker-compose up --build -d
                         
                         echo "Waiting for containers to stabilize..."
-                        timeout /t 30 > nul
+                        ping -n 30 127.0.0.1 > nul
                         
                         echo "Checking container status..."
                         docker-compose ps
                         
                         echo "Checking backend health endpoint..."
-                        curl -v http://localhost:8000/health
-                        if errorlevel 1 (
-                            echo "Health check failed!"
-                            echo "Checking container logs..."
-                            docker-compose logs backend
-                            exit /b 1
+                        for /l %%i in (1,1,5) do (
+                            curl -v http://localhost:8000/health
+                            if not errorlevel 1 (
+                                echo "Health check passed!"
+                                exit /b 0
+                            )
+                            echo "Attempt %%i failed, retrying in 5 seconds..."
+                            ping -n 5 127.0.0.1 > nul
                         )
+                        echo "Health check failed after 5 attempts!"
+                        echo "Checking container logs..."
+                        docker-compose logs backend
+                        exit /b 1
                     """
                 }
             }
@@ -58,7 +64,6 @@ pipeline {
                     docker system prune -f
                 """
             }
-            cleanWs()
         }
 
         success {
@@ -70,14 +75,12 @@ pipeline {
 
         failure {
             echo "Pipeline failed. Check logs and health checks."
-            bat """
-                echo "Last commit:"
-                git rev-parse HEAD
-                echo "Git status:"
-                git status
-                echo "Container logs:"
-                docker-compose logs
-            """
+            dir("${COMPOSE_PROJECT_DIR}") {
+                bat """
+                    echo "Container logs:"
+                    docker-compose logs
+                """
+            }
         }
     }
 }
