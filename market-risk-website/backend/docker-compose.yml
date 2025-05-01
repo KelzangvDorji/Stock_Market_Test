@@ -22,9 +22,10 @@ services:
   frontend:
     build:
       context: ../frontend
-      target: development
+      dockerfile: Dockerfile
+      target: builder
     ports:
-      - "3000:3000"
+      - "3000:80"
     volumes:
       - ../frontend:/app
       - /app/node_modules
