@@ -30,12 +30,17 @@ pipeline {
                         docker-compose up --build -d
                         
                         echo "Waiting for containers to stabilize..."
-                        timeout /t 10 > nul
+                        timeout /t 30 > nul
+                        
+                        echo "Checking container status..."
+                        docker-compose ps
                         
                         echo "Checking backend health endpoint..."
                         curl -v http://localhost:8000/health
                         if errorlevel 1 (
                             echo "Health check failed!"
+                            echo "Checking container logs..."
+                            docker-compose logs backend
                             exit /b 1
                         )
                     """
@@ -52,8 +57,6 @@ pipeline {
                     echo "Deploying to production..."
                     git tag -a "v${BUILD_NUMBER}" -m "Production release ${BUILD_NUMBER}"
                     git push origin "v${BUILD_NUMBER}"
-                    rem Add production deployment steps here
-                    rem Example: docker-compose push, etc.
                 """
             }
         }
@@ -85,6 +88,8 @@ pipeline {
                 git rev-parse HEAD
                 echo "Git status:"
                 git status
+                echo "Container logs:"
+                docker-compose logs
             """
         }
     }
