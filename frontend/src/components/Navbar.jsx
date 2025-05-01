@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom'; // React Router for page navigation
-import './navbar.css'; // Import your navbar styles here
+import './Navbar.css'; // Import your navbar styles here
 import { searchStock } from '../api/search';
 import { useNavigate } from 'react-router-dom';
 
